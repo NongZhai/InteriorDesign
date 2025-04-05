@@ -113,12 +113,13 @@
       <option value="有">有</option>
     </select>
 
-    $1
+    <div id="windowSection" style="display:none">
       <label>窗戶牆面位置</label>
       <select id="windowWall">
         <option value="長邊牆面">長邊牆面</option>
         <option value="短邊牆面">短邊牆面</option>
       </select>
+
       <label>窗戶尺寸（寬 × 高，cm）</label>
       <input type="text" id="windowSize" placeholder="例如 60x60" />
 
@@ -133,6 +134,11 @@
       <button onclick="generatePrompt()">產生 GPT Prompt</button>
       <button onclick="copyPrompt()">複製文字</button>
     </div>
+
+    <textarea id="result" readonly placeholder="這裡會產生結果，請按 Ctrl+C 複製"></textarea>
+
+    <div style="margin-top:1rem; font-weight:bold;">Total tile usage: <span id="tileCount">--</span></div>
+  </div>
 
   <script>
     document.getElementById("hasWindow").addEventListener("change", function () {
@@ -155,8 +161,8 @@
       const hasWindow = document.getElementById("hasWindow").value;
       const windowSize = document.getElementById("windowSize").value;
       const windowBottom = document.getElementById("windowFromBottom").value;
+      const windowLeft = document.getElementById("windowFromLeft").value;
       const windowWall = document.getElementById("windowWall").value;
-      $1
 
       let prompt = `你是一個磁磚排版圖生成器，請幫我根據以下條件畫出「四面牆的磁磚排版展開圖」，並包含以下要求：\n\n` +
         `【牆面資訊】\n- 浴室長度：${l} cm\n- 浴室寬度：${w} cm\n- 牆面總高度：${h} cm\n- 鋪設高度：${ih} cm（若小於牆高，代表天花處保留空間）\n\n` +
@@ -167,20 +173,10 @@
       }
 
       if (hasWindow === "有" && windowSize.trim()) {
-        prompt += `【窗戶】
-- 位置：${windowWall}
-- 尺寸：${windowSize} cm
-- 離地高度：${windowBottom} cm
-- 靠左邊距離：${windowLeft} cm
-
-`;
+        prompt += `【窗戶】\n- 位置：${windowWall}\n- 尺寸：${windowSize} cm\n- 離地高度：${windowBottom} cm\n- 靠左邊距離：${windowLeft} cm\n\n`;
       }
 
-      prompt += `【顯示需求】
-1. 將四面牆依序展平成一行：W1、W2、W3、W4
-2. 圖面上顯示 Total tile usage: 並列出實際磁磚使用總數
-3. 每片磁磚以紅色文字標示編號（#1、#2、...）
-4. 裁切磁磚用不同顏色區分（例如淺藍色），並加上圖例說明\n4. 每面牆標註名稱與牆寬尺寸\n5. 左側標示牆高與實際鋪設高度\n6. 右上角以紅字標示：「單片磁磚尺寸：${tw} x ${th} cm」`;
+      prompt += `【顯示需求】\n1. 將四面牆依序展平成一行：W1、W2、W3、W4\n2. 圖面上顯示 Total tile usage: 並列出實際磁磚使用總數\n3. 每片磁磚以紅色文字標示編號（#1、#2、...）\n4. 裁切磁磚用不同顏色區分（例如淺藍色），並加上圖例說明\n5. 每面牆標註名稱與牆寬尺寸\n6. 左側標示牆高與實際鋪設高度\n7. 右上角以紅字標示：「單片磁磚尺寸：${tw} x ${th} cm」`;
 
       document.getElementById("result").value = prompt;
     }
@@ -195,4 +191,3 @@
   </script>
 </body>
 </html>
-
