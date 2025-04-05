@@ -56,9 +56,132 @@
 <body>
   <div class="container">
     <h2>磁磚排版 Prompt 產生器</h2>
-    <!-- 以下省略，與目前 Canvas 內容相同 -->
-    <!-- 為簡化回傳，不重複貼完整 HTML，實際檔案包含 Canvas 所示完整程式碼 -->
-    （完整 HTML 已內嵌）
+
+    <label>浴室長度（cm）</label>
+    <input type="number" id="length" placeholder="例如 220" />
+
+    <label>浴室寬度（cm）</label>
+    <input type="number" id="width" placeholder="例如 140" />
+
+    <label>浴室淨高度（cm）</label>
+    <input type="number" id="height" placeholder="例如 240" />
+
+    <label>實際鋪設高度（cm）</label>
+    <input type="number" id="installHeight" placeholder="例如 210(圖面會模擬天花上預留空間)" />
+
+    <label>磁磚寬度（cm）</label>
+    <input type="number" id="tileW" placeholder="例如 60" />
+
+    <label>磁磚高度（cm）</label>
+    <input type="number" id="tileH" placeholder="例如 30" />
+
+    <label>起鋪點</label>
+    <select id="startPoint">
+      <option value="左下">左下</option>
+      <option value="右下">右下</option>
+      <option value="中間對稱">中間對稱</option>
+    </select>
+
+    <label>貼法</label>
+    <select id="pattern">
+      <option value="平鋪">平鋪</option>
+      <option value="1/2 交丁">1/2 交丁</option>
+      <option value="1/3 交丁">1/3 交丁</option>
+    </select>
+
+    <label>門洞位置</label>
+    <select id="doorWall">
+      <option value="長邊牆面靠左">長邊牆面靠左</option>
+      <option value="長邊牆面靠右">長邊牆面靠右</option>
+      <option value="短邊牆面靠左">短邊牆面靠左</option>
+      <option value="短邊牆面靠右">短邊牆面靠右</option>
+      <option value="無">無</option>
+    </select>
+
+    <label>門洞尺寸（寬 × 高，cm）</label>
+    <input type="text" id="doorSize" placeholder="例如 90x210" />
+
+    <label>門洞離地高度（cm）</label>
+    <input type="number" id="doorFromBottom" placeholder="例如 0（從地面開始）" />
+
+    <label>門洞靠左邊距離（cm）</label>
+    <input type="number" id="doorFromLeft" placeholder="例如 0（貼牆）" />
+
+    <label>是否有窗戶</label>
+    <select id="hasWindow">
+      <option value="無">無</option>
+      <option value="有">有</option>
+    </select>
+
+    <div id="windowSection" style="display:none">
+      <label>窗戶尺寸（寬 × 高，cm）</label>
+      <input type="text" id="windowSize" placeholder="例如 60x60" />
+
+      <label>窗戶離地高度（cm）</label>
+      <input type="number" id="windowFromBottom" placeholder="例如 120" />
+
+      <label>窗戶靠左邊距離（cm）</label>
+      <input type="number" id="windowFromLeft" placeholder="例如 30" />
+    </div>
+
+    <div class="button-row">
+      <button onclick="generatePrompt()">產生 GPT Prompt</button>
+      <button onclick="copyPrompt()">複製文字</button>
+    </div>
+
+    <div style="margin-top:1rem; font-weight:bold;">Total tile usage: <span id="tileCount">--</span></div>
+
+$1$2$3
   </div>
+
+  <script>
+    document.getElementById("hasWindow").addEventListener("change", function () {
+      document.getElementById("windowSection").style.display = this.value === "有" ? "block" : "none";
+    });
+
+    function generatePrompt() {
+      const l = document.getElementById("length").value;
+      const w = document.getElementById("width").value;
+      const h = document.getElementById("height").value;
+      const ih = document.getElementById("installHeight").value;
+      const tw = document.getElementById("tileW").value;
+      const th = document.getElementById("tileH").value;
+      const pattern = document.getElementById("pattern").value;
+      const start = document.getElementById("startPoint").value;
+      const doorPos = document.getElementById("doorWall").value;
+      const doorSize = document.getElementById("doorSize").value;
+      const doorBottom = document.getElementById("doorFromBottom").value;
+      const doorLeft = document.getElementById("doorFromLeft").value;
+      const hasWindow = document.getElementById("hasWindow").value;
+      const windowSize = document.getElementById("windowSize").value;
+      const windowBottom = document.getElementById("windowFromBottom").value;
+      const windowLeft = document.getElementById("windowFromLeft").value;
+
+      let prompt = `你是一個磁磚排版圖生成器，請幫我根據以下條件畫出「四面牆的磁磚排版展開圖」，並包含以下要求：\n\n` +
+        `【牆面資訊】\n- 浴室長度：${l} cm\n- 浴室寬度：${w} cm\n- 牆面總高度：${h} cm\n- 鋪設高度：${ih} cm（若小於牆高，代表天花處保留空間）\n\n` +
+        `【磁磚尺寸】\n- 單片磁磚尺寸：${tw} cm（寬）× ${th} cm（高）\n- 起鋪點：${start}\n- 貼法：${pattern}\n- 磁磚縫寬：2mm（固定）\n\n`;
+
+      if (doorPos !== "無" && doorSize.trim()) {
+        prompt += `【門洞】\n- 位置：${doorPos}\n- 尺寸：${doorSize} cm\n- 離地高度：${doorBottom} cm\n- 靠左邊距離：${doorLeft} cm\n\n`;
+      }
+
+      if (hasWindow === "有" && windowSize.trim()) {
+        prompt += `【窗戶】\n- 尺寸：${windowSize} cm\n- 離地高度：${windowBottom} cm\n- 靠左邊距離：${windowLeft} cm\n\n`;
+      }
+
+      prompt += `【顯示需求】\n1. 將四面牆依序展平成一行：W1、W2、W3、W4\n2. 每片磁磚以紅色文字標示編號（#1、#2、...）\n3. 裁切磁磚用不同顏色區分（例如淺藍色），並加上圖例說明\n4. 每面牆標註名稱與牆寬尺寸\n5. 左側標示牆高與實際鋪設高度\n6. 右上角以紅字標示：「單片磁磚尺寸：${tw} x ${th} cm」`;
+
+      document.getElementById("result").value = prompt;
+    }
+
+    function copyPrompt() {
+      const textarea = document.getElementById("result");
+      textarea.select();
+      textarea.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(textarea.value);
+      alert("Prompt 已複製！直接貼到GPT即可");
+    }
+  </script>
 </body>
 </html>
+
