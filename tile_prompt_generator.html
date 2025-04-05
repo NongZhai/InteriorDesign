@@ -89,28 +89,35 @@
       <option value="1/3 交丁">1/3 交丁</option>
     </select>
 
-    <label>門洞位置</label>
-    <select id="doorWall">
-      <option value="長邊牆面靠左">長邊牆面靠左</option>
-      <option value="長邊牆面靠右">長邊牆面靠右</option>
-      <option value="短邊牆面靠左">短邊牆面靠左</option>
-      <option value="短邊牆面靠右">短邊牆面靠右</option>
-      <option value="無">無</option>
+    <label>是否有門洞</label>
+    <select id="hasDoor">
+      <option value="否">否</option>
+      <option value="是">是</option>
     </select>
 
-    <label>門洞尺寸（寬 × 高，cm）</label>
-    <input type="text" id="doorSize" placeholder="例如 90x210" />
+    <div id="doorSection" style="display:none">
+      <label>門洞位置</label>
+      <select id="doorWall">
+        <option value="長邊牆面靠左">長邊牆面靠左</option>
+        <option value="長邊牆面靠右">長邊牆面靠右</option>
+        <option value="短邊牆面靠左">短邊牆面靠左</option>
+        <option value="短邊牆面靠右">短邊牆面靠右</option>
+      </select>
 
-    <label>門洞離地高度（cm）</label>
-    <input type="number" id="doorFromBottom" placeholder="例如 0（從地面開始）" />
+      <label>門洞尺寸（寬 × 高，cm）</label>
+      <input type="text" id="doorSize" placeholder="例如 90x210" />
 
-    <label>門洞靠左邊距離（cm）</label>
-    <input type="number" id="doorFromLeft" placeholder="例如 0（貼牆）" />
+      <label>門洞離地高度（cm）</label>
+      <input type="number" id="doorFromBottom" placeholder="例如 0（從地面開始）" />
+
+      <label>門洞靠左邊距離（cm）</label>
+      <input type="number" id="doorFromLeft" placeholder="例如 0（貼牆）" />
+    </div>
 
     <label>是否有窗戶</label>
     <select id="hasWindow">
-      <option value="無">無</option>
-      <option value="有">有</option>
+      <option value="否">否</option>
+      <option value="是">是</option>
     </select>
 
     <div id="windowSection" style="display:none">
@@ -135,12 +142,16 @@
       <button onclick="copyPrompt()">複製文字</button>
     </div>
 
-    <textarea id="result" readonly placeholder="這裡會產生結果，請按 Ctrl+C 複製"></textarea>
-
+    <textarea id="result" readonly placeholder="這裡會產生結果，請按產生按鈕後再複製"></textarea>
+  </div>
 
   <script>
     document.getElementById("hasWindow").addEventListener("change", function () {
-      document.getElementById("windowSection").style.display = this.value === "有" ? "block" : "none";
+      document.getElementById("windowSection").style.display = this.value === "是" ? "block" : "none";
+    });
+
+    document.getElementById("hasDoor").addEventListener("change", function () {
+      document.getElementById("doorSection").style.display = this.value === "是" ? "block" : "none";
     });
 
     function generatePrompt() {
@@ -152,29 +163,64 @@
       const th = document.getElementById("tileH").value;
       const pattern = document.getElementById("pattern").value;
       const start = document.getElementById("startPoint").value;
-      const doorPos = document.getElementById("doorWall").value;
-      const doorSize = document.getElementById("doorSize").value;
-      const doorBottom = document.getElementById("doorFromBottom").value;
-      const doorLeft = document.getElementById("doorFromLeft").value;
+      const hasDoor = document.getElementById("hasDoor").value;
+      const doorPos = hasDoor === "是" ? document.getElementById("doorWall").value : "無";
+      const doorSize = hasDoor === "是" ? document.getElementById("doorSize").value : "";
+      const doorBottom = hasDoor === "是" ? document.getElementById("doorFromBottom").value : "";
+      const doorLeft = hasDoor === "是" ? document.getElementById("doorFromLeft").value : "";
       const hasWindow = document.getElementById("hasWindow").value;
-      const windowSize = document.getElementById("windowSize").value;
-      const windowBottom = document.getElementById("windowFromBottom").value;
-      const windowLeft = document.getElementById("windowFromLeft").value;
-      const windowWall = document.getElementById("windowWall").value;
+      const windowWall = hasWindow === "是" ? document.getElementById("windowWall").value : "";
+      const windowSize = hasWindow === "是" ? document.getElementById("windowSize").value : "";
+      const windowBottom = hasWindow === "是" ? document.getElementById("windowFromBottom").value : "";
+      const windowLeft = hasWindow === "是" ? document.getElementById("windowFromLeft").value : "";
 
-      let prompt = `你是一個磁磚排版圖生成器，請幫我根據以下條件畫出「四面牆的磁磚排版展開圖」，並包含以下要求：\n\n` +
-        `【牆面資訊】\n- 浴室長度：${l} cm\n- 浴室寬度：${w} cm\n- 牆面總高度：${h} cm\n- 鋪設高度：${ih} cm（若小於牆高，代表天花處保留空間）\n\n` +
-        `【磁磚尺寸】\n- 單片磁磚尺寸：${tw} cm（寬）× ${th} cm（高）\n- 起鋪點：${start}\n- 貼法：${pattern}\n- 磁磚縫寬：2mm（固定）\n\n`;
+      let prompt = `你是一個專業磁磚排版圖生成器，請根據以下條件畫出一張「四面牆展開圖」，並依照下列所有規則繪製圖面，最終輸出一張圖與詳細的文字說明：\n` +
+        `【牆面資訊】\n` +
+        `- 浴室長度：${l} cm\n` +
+        `- 浴室寬度：${w} cm\n` +
+        `- 浴室淨高度：${h} cm\n` +
+        `- 實際鋪設高度：${ih} cm（代表從地面往上鋪到該高度，頂部為天花保留區）\n` +
+        `【磁磚資訊】\n` +
+        `- 單片磁磚尺寸：${tw} cm（寬） × ${th} cm（高）\n` +
+        `- 貼法：${pattern}\n` +
+        `- 起鋪點：${start}\n` +
+        `- 磁磚縫寬：2mm\n`;
 
-      if (doorPos !== "無" && doorSize.trim()) {
-        prompt += `【門洞】\n- 位置：${doorPos}\n- 尺寸：${doorSize} cm\n- 離地高度：${doorBottom} cm\n- 靠左邊距離：${doorLeft} cm\n\n`;
+      prompt += `【門洞資訊】\n` +
+        `- 是否有門洞：${hasDoor}\n`;
+      
+      if (hasDoor === "是" && doorSize.trim()) {
+        prompt += `- 位置：${doorPos}\n` +
+                 `- 尺寸：${doorSize} cm（寬 × 高）\n` +
+                 `- 離地高度：${doorBottom} cm\n` +
+                 `- 靠左邊距離：${doorLeft} cm\n`;
       }
 
-      if (hasWindow === "有" && windowSize.trim()) {
-        prompt += `【窗戶】\n- 位置：${windowWall}\n- 尺寸：${windowSize} cm\n- 離地高度：${windowBottom} cm\n- 靠左邊距離：${windowLeft} cm\n\n`;
+      prompt += `【窗戶資訊】\n` +
+        `- 是否有窗戶：${hasWindow}\n`;
+      
+      if (hasWindow === "是" && windowSize.trim()) {
+        prompt += `- 位置：${windowWall}\n` +
+                 `- 尺寸：${windowSize} cm（寬 × 高）\n` +
+                 `- 離地高度：${windowBottom} cm\n` +
+                 `- 靠左邊距離：${windowLeft} cm\n`;
       }
 
-      prompt += `【顯示需求】\n1. 將四面牆依序展平成一行：W1、W2、W3、W4\n2. 圖面上顯示 Total tile usage: 並列出實際磁磚使用總數\n3. 每片磁磚以紅色文字標示編號（#1、#2、...）\n4. 裁切磁磚用不同顏色區分（例如淺藍色），並加上圖例說明\n5. 每面牆標註名稱與牆寬尺寸\n6. 左側標示牆高與實際鋪設高度\n7. 右上角以紅字標示：「單片磁磚尺寸：${tw} x ${th} cm」`;
+      prompt += `【圖面繪製需求】\n` +
+        `1. 將四面牆依序展平成一排（W1、W2、W3、W4），從左到右依序排列\n` +
+        `2. 每片磁磚用編號顯示（例如：#1、#2、#3…）\n` +
+        `3. 用顏色區分裁切磁磚（不完整者視為裁切），包括：\n` +
+        `   - 被牆寬邊緣裁切\n` +
+        `   - 被牆高或鋪設高度裁切\n` +
+        `   - 被門洞或窗戶遮擋而裁切\n` +
+        `4. 在圖例中標註「裁切磁磚區」與完整磁磚區\n` +
+        `5. 在門洞與窗戶位置，用灰白斜線區塊或虛線框標示，並註記「門洞」或「窗戶」\n` +
+        `6. 在每面牆上方註記牆名（W1 ~ W4），並顯示牆寬尺寸\n` +
+        `7. 左側垂直標示牆高與實際鋪設高度（例如：淨高240cm，鋪設210cm）\n` +
+        `8. 圖面右上角標註磁磚尺寸（例如：單片磁磚尺寸：${tw} x ${th} cm）\n` +
+        `9. 在圖面底部顯示磁磚使用總數（Total tile usage: ___），包含完整與裁切片\n` +
+        `10. 請用可閱讀的比例與圖面排版完成繪圖\n` +
+        `請務必精準依照以上格式繪製磁磚排版展開圖，並輸出圖片與使用統計。`;
 
       document.getElementById("result").value = prompt;
     }
